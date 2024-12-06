@@ -5,13 +5,12 @@ import timezone from 'dayjs/plugin/timezone.js';
 import { UrlModel } from './db.js';
 import { generateRandomString } from './randomstring.js';
 import { authenticateMiddleware } from './auth.js'; // Import middleware
-import { something } from './auth.js'; // Import middleware
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-something;
+
 // Helper function to generate the next customId
 const getNextCustomId = async () => {
   const lastUrl = await UrlModel.findOne({}, {}, { sort: { customId: -1 } }).exec();
