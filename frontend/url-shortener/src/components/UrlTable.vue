@@ -64,8 +64,8 @@
           
           <td>{{ formatExpiryDate(url.expiryDate) }}</td>
           
-          <!--<td>{{ url.createdBy }}</td>-->
-          <td>{{ 'Unknown' }}</td>
+          <td>{{ url.createdBy }}</td>
+
           <!-- Display local time by calling the convertToLocalTime function
           The function takes the 'createdTime' property from the 'url' object (which is in UTC format)
           and converts it to the user's local time, adjusting for time zone and daylight savings -->

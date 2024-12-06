@@ -41,12 +41,10 @@
       <br />
       <p><strong>Expiry Date:</strong> {{ formatExpiryDate(expiryDate) || 'No expiry date' }}</p>
       <br />
-      <!--<p><strong>Created By:</strong> {{ createdBy || 'Unknown' }}</p>-->
-      <p><strong>Created By:</strong> {{ 'Unknown' }}</p>
+      <p><strong>Created By:</strong> {{ createdBy || 'Unknown' }}</p>
       <p><strong>Created Date/Time:</strong> {{ createdTime || 'N/A' }}</p>
       <p><strong>Edited Date/Time:</strong> {{ updatedAt || 'No edits' }}</p>
-      <!--<p><strong>Edited By:</strong> {{ editedBy || 'No edits' }}</p>-->
-      <p><strong>Edited By:</strong> {{ 'Unknown' }}</p>
+      <p><strong>Edited By:</strong> {{ editedBy || 'No edits' }}</p>
       <br />
       <p><strong>Notes:</strong></p>
       <p> &nbsp;{{ description || 'No description provided' }}</p>
@@ -347,7 +345,7 @@ const formattedHistory = computed(() => {
             fieldEdited: change.fieldEdited,
             oldValue: change.oldValue,
             newValue: change.newValue,
-            //editedBy: change.editedBy,
+            editedBy: change.editedBy,
             updatedAt: convertToLocalTime(change.updatedAt),
           });
         }
@@ -374,7 +372,7 @@ onMounted(async () => {
     expiryDate.value = data.expiryDate ? formatExpiryDate(data.expiryDate) : 'No expiry date';
     createdTime.value = convertToLocalTime(data.createdTime);
     updatedAt.value = data.updatedAt ? convertToLocalTime(data.updatedAt) : 'No edits';
-    createdBy.value = data.createdBy || 'Unknown'; // Fix for `createdBy`
+    createdBy.value = data.createdBy || 'Unknown'; 
     editedBy.value = data.editedBy || 'No edits';
 
     // Fetch the main document (URL summary)

@@ -1,9 +1,9 @@
 // Import dotenv to manage environment variables
-import dotenv from 'dotenv'; 
+import dotenv from 'dotenv';
 import express from 'express'; // Import the Express framework for building the server
 import cors from 'cors'; // Import CORS middleware to enable cross-origin requests
 import { setRoutes } from './routes.js'; // Import the function to set up application routes
-import { authenticate } from './auth.js'; // Import the authenticate function for user validation
+import { authenticateMiddleware } from './auth.js'; // Import the authenticateMiddleware function for user validation
 import rateLimit from 'express-rate-limit'; // Import the express-rate-limit package
 
 // Load environment variables from the .env file into process.env
@@ -24,42 +24,35 @@ const limiter = rateLimit({
 // Use CORS middleware to allow cross-origin requests
 app.use(cors());
 
-// Middleware to parse incoming JSON requests
+// Middleware to parse incoming JSON and URL-encoded requests
 app.use(express.json());
-
-// Middleware to parse URL-encoded requests
 app.use(express.urlencoded({ extended: false }));
 
-// Health check route to ensure the backend is operational
-app.get('/', (req, res) => {
-  res.json({ message: 'Backend is running' }); // Respond with a simple message
+// Handle favicon.ico requests to prevent unnecessary logs or errors
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).send(); // No Content
 });
 
-// Authentication middleware to validate incoming requests
-const authMiddleware = async (req, res, next) => {
-  // Validate the token in the request headers
-  const currentUser = await authenticate(req.headers); 
-
-  if (!currentUser) {
-    // Send a 401 Unauthorized response if authentication fails
-    return res.status(401).json({ message: 'Unauthorized: Invalid or missing token' });
-  }
-
-  // Attach the authenticated user info to the req object for use in routes
-  req.user = currentUser;
-
-  // Proceed to the next middleware or route handler
-  next();
-};
+// Health check route to ensure the backend is operational (No auth required)
+app.get('/', (req, res) => {
+  res.json({ message: 'Backend is running' });
+});
 
 // Create a new Express router
 const router = express.Router();
 
-// Apply the authentication middleware to the router to protect all routes
-app.use(limiter, authMiddleware, router); // Secure all routes with the authentication middleware and rate limiter
+// Apply the rate limiter to all routes in the router
+router.use(limiter);
+
+// Apply authentication middleware to protected routes only
+// All routes defined in `setRoutes` will now be protected by the authentication middleware
+router.use(authenticateMiddleware);
 
 // Set up your application routes
 setRoutes(router);
+
+// Use the router for all defined routes
+app.use('/', router);
 
 // Start the Express server and listen on port 3000
 app.listen(3000, function () {
