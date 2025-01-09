@@ -6,6 +6,8 @@ import { initializeKeycloak } from '@/services/keycloak';
 import ShortUrl from '../components/ShortUrl.vue';
 import UrlSummary from '../views/UrlSummary.vue';
 import UrlTable from '../components/UrlTable.vue';
+import ErrorPage from '../components/ErrorPage.vue'; // Import an error page component
+import axios from 'axios'; // Use axios for consistent API requests
 
 // Define the routes for the application (the paths users can visit)
 const routes = [
@@ -33,6 +35,40 @@ const routes = [
     meta: { requiresAuth: true }, // Even this default route requires authentication
   },
   {
+    path: '/redirect/:shortUrl',
+    name: 'redirect',
+    beforeEnter: async (to, from, next) => {
+      const backendURL = import.meta.env.VITE_BACKEND_URL;
+  
+      try {
+        // Make a request to validate the short URL
+        const response = await fetch(`${backendURL}/validate/${to.params.shortUrl}`);
+  
+        if (response.status === 404 || response.status === 410) {
+          // Navigate to error page for invalid or expired URLs
+          next({ name: 'error' });
+        } else if (response.status === 200) {
+          // Redirect the browser directly for valid URLs
+          window.location.href = `${backendURL}/redirect/${to.params.shortUrl}`;
+        } else {
+          // Handle unexpected responses
+          console.error('Unexpected status:', response.status);
+          next({ name: 'error' });
+        }
+      } catch (error) {
+        console.error('Error during redirection:', error);
+        next({ name: 'error' });
+      }
+    },
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/error', // Error page route for invalid or expired links
+    name: 'error',
+    component: ErrorPage, // Show an error page
+    meta: { requiresAuth: false }, // No authentication required for error page
+  },
+  {
     path: '/:pathMatch(.*)*', // Catch-all route for any invalid URLs
     redirect: '/create', // Redirect users back to the '/create' page
     meta: { requiresAuth: true }, // This redirect also requires authentication
@@ -48,16 +84,20 @@ const router = createRouter({
 // Navigation guard to handle authentication before allowing access to routes
 router.beforeEach(async (to, from, next) => {
   try {
-    // Initialize Keycloak to check if the user is authenticated
-    const keycloak = await initializeKeycloak(); 
-
     // Check if the route requires authentication (via meta.requiresAuth)
-    if (to.meta.requiresAuth && keycloak && !keycloak.authenticated) {
-      // If not authenticated, redirect the user to the login page (using Keycloak)
-      await keycloak.login({ redirectUri: window.location.origin + to.fullPath });
+    if (to.meta.requiresAuth) {
+      // Initialize Keycloak to check if the user is authenticated
+      const keycloak = await initializeKeycloak();
+
+      if (keycloak && !keycloak.authenticated) {
+        // If not authenticated, redirect the user to the login page (using Keycloak)
+        await keycloak.login({ redirectUri: window.location.origin + to.fullPath });
+      } else {
+        // If authenticated, or the route does not require authentication, allow navigation
+        next();
+      }
     } else {
-      // If authenticated, or the route does not require authentication, allow navigation
-      next();
+      next(); // No authentication required, allow navigation
     }
   } catch (error) {
     // If an error occurs during authentication or navigation, log the error

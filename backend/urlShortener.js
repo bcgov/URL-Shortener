@@ -1,3 +1,4 @@
+// Import necessary libraries and plugins
 import dayjs from 'dayjs'; // Import dayjs
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -9,7 +10,6 @@ import { authenticateMiddleware } from './auth.js'; // Import middleware
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
 
 // Helper function to generate the next customId
 const getNextCustomId = async () => {
@@ -75,8 +75,6 @@ export const shortenUrl = [
   },
 ];
 
-
-
 export const updateUrl = [
   authenticateMiddleware, // Middleware to enforce authentication
   async (req, res) => {
@@ -128,8 +126,6 @@ export const updateUrl = [
   },
 ];
 
-
-
 export const getHistory = [
   authenticateMiddleware, // Use middleware to enforce authentication
   async (req, res) => {
@@ -144,7 +140,7 @@ export const getHistory = [
       }
 
       // Convert dates in the versions array to UTC for consistency
-      const versions = urlDocument.versions.map(version => ({
+      const versions = urlDocument.versions.map((version) => ({
         ...version,
         updatedAt: version.updatedAt ? dayjs(version.updatedAt).utc().toISOString() : null,
       }));
@@ -158,3 +154,54 @@ export const getHistory = [
   },
 ];
 
+// Function to handle redirection requests
+export const handleRedirect = async (req, res) => {
+  const { shortUrl } = req.params; // Extract shortUrl from request parameters
+
+  try {
+    // Query the database for the corresponding entry
+    const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
+
+    if (!urlDocument) {
+      // Short URL not found
+      return res.status(404).send('Sorry, this link does not exist.');
+    }
+
+    const currentDate = dayjs().utc(); // Get current UTC time
+    const expiryDate = urlDocument.expiryDate ? dayjs(urlDocument.expiryDate).utc() : null;
+
+    if (expiryDate && currentDate.isAfter(expiryDate)) {
+      // Short URL has expired
+      return res.status(410).send('Sorry, this link has expired.');
+    }
+
+    // Redirect to the target URL
+    res.redirect(urlDocument.targetUrl);
+  } catch (error) {
+    console.error('Error handling redirect:', error.message);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+// Function to validate short URLs without performing a redirect
+export const validateShortUrl = async (req, res) => {
+  const { shortUrl } = req.params;
+
+  try {
+    const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
+
+    if (!urlDocument) {
+      return res.status(404).json({ error: 'Link not found' }); // Short URL not found
+    }
+
+    const currentDate = new Date();
+    if (urlDocument.expiryDate && currentDate > urlDocument.expiryDate) {
+      return res.status(410).json({ error: 'Link expired' }); // Short URL expired
+    }
+
+    res.status(200).json({ message: 'Link is valid' }); // Link is valid
+  } catch (error) {
+    console.error('Error validating short URL:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' }); // General error
+  }
+};

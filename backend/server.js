@@ -12,6 +12,9 @@ dotenv.config();
 // Retrieve the backend URL from environment variables
 const backendURL = process.env.BACKEND_URL;
 
+// Retrieve the frontend URL from environment variables
+const frontendURL = process.env.FRONTEND_URL;
+
 // Initialize an Express application
 const app = express();
 
@@ -21,8 +24,28 @@ const limiter = rateLimit({
   max: 100, // max 100 requests per windowMs
 });
 
-// Use CORS middleware to allow cross-origin requests
-app.use(cors());
+// Use CORS middleware to allow cross-origin requests only from the configured FRONTEND_URL
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigin = process.env.FRONTEND_URL; // Retrieve allowed origin from environment variable
+
+      if (!origin || origin === allowedOrigin) {
+        callback(null, true); // Allow the origin
+      } else {
+        console.error(`Blocked by CORS: Origin ${origin} is not allowed`);
+        callback(new Error('Not allowed by CORS')); // Deny the origin
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Include necessary HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Include necessary headers
+    credentials: true, // Include credentials if needed
+  })
+);
+
+// Ensure preflight requests are handled properly
+app.options('*', cors());
+
 
 // Middleware to parse incoming JSON and URL-encoded requests
 app.use(express.json());
@@ -44,9 +67,15 @@ const router = express.Router();
 // Apply the rate limiter to all routes in the router
 router.use(limiter);
 
-// Apply authentication middleware to protected routes only
-// All routes defined in `setRoutes` will now be protected by the authentication middleware
-router.use(authenticateMiddleware);
+// Apply authentication middleware selectively
+router.use((req, res, next) => {
+  // Skip authentication for the /redirect/:shortUrl and /validate/:shortUrl routes
+  if (req.path.startsWith('/redirect/') || req.path.startsWith('/validate/')) {
+    return next();
+  }
+  // Apply authentication for all other routes
+  authenticateMiddleware(req, res, next);
+});
 
 // Set up your application routes
 setRoutes(router);
@@ -57,5 +86,6 @@ app.use('/', router);
 // Start the Express server and listen on port 3000
 app.listen(3000, function () {
   console.log(`Listening at ${backendURL}`); // Log the backend URL to the console
+  console.log(`Allowed frontend URL: ${frontendURL}`); // Log the frontend URL for debugging
   console.log('NODE_ENV:', process.env.NODE_ENV); // Log the current Node environment
 });

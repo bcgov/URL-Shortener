@@ -3,6 +3,7 @@ import { shortenUrl } from './urlShortener.js';
 import { getUrlSummary } from './urlSummary.js';
 import { getUrlTable } from './urlTable.js';
 import { updateUrl, getHistory } from './urlShortener.js'; // Import new functions
+import { handleRedirect, validateShortUrl } from './urlShortener.js'; // Import the new validation function
 import RateLimit from 'express-rate-limit'; // Import the rate-limiting middleware for Express.
 
 const authLimiter = RateLimit({
@@ -32,4 +33,10 @@ export const setRoutes = (router) => {
 
   // Route to fetch the version history of a URL based on customId
   router.get('/url-history/:customId', limiter, getHistory);
+
+  // Route to handle redirection for short URLs
+  router.get('/redirect/:shortUrl', limiter, handleRedirect);
+
+  // Route to validate a short URL without redirection
+  router.get('/validate/:shortUrl', limiter, validateShortUrl);
 };
