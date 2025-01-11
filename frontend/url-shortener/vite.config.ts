@@ -14,5 +14,14 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  }
+  },
+  server: {
+    host: 'localhost', // Ensure the server runs locally
+    port: 5173,        // Set the server port explicitly
+    hmr: {
+      protocol: 'ws',  // Explicitly set WebSocket protocol
+      host: 'localhost',
+      port: 5173,      // Use the same port as the development server
+    },
+  },
 })
