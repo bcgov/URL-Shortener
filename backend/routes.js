@@ -2,9 +2,10 @@
 import { shortenUrl } from './urlShortener.js';
 import { getUrlSummary } from './urlSummary.js';
 import { getUrlTable } from './urlTable.js';
-import { updateUrl, getHistory } from './urlShortener.js'; // Import new functions
+import { updateUrl, getHistory, handleRedirect, validateShortUrl } from './urlShortener.js'; // Import required functions
 import RateLimit from 'express-rate-limit'; // Import the rate-limiting middleware for Express.
 
+// Rate limiter for authenticated requests: maximum of 100 requests per 15 minutes
 const authLimiter = RateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes duration for the rate limit.
   max: 100, // Allow a maximum of 100 requests within the 15-minute window.
@@ -32,4 +33,10 @@ export const setRoutes = (router) => {
 
   // Route to fetch the version history of a URL based on customId
   router.get('/url-history/:customId', limiter, getHistory);
+
+  // Route to validate a short URL without redirection (used by the frontend or API consumers)
+  router.get('/validate/:shortUrl', limiter, validateShortUrl);
+
+  // Route for direct redirection based on short string (handles browser requests)
+  router.get('/:shortUrl', handleRedirect); // Catch-all route for short URL redirection
 };

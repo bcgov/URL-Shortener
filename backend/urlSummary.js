@@ -15,7 +15,7 @@ export const getUrlSummary = [
       }
 
       // Construct the complete shortened URL
-      const shortenedUrl = `${process.env.CUSTOM_DOMAIN}/${urlDetails.shortenedUrlString}`;
+      const shortenedUrl = `${process.env.VANITY_URL}/${urlDetails.shortenedUrlString}`;
 
       // Send the URL details and shortened URL as a JSON response
       res.json({

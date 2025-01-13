@@ -1,28 +1,31 @@
-import dayjs from 'dayjs'; // Import dayjs
-import utc from 'dayjs/plugin/utc.js';
-import timezone from 'dayjs/plugin/timezone.js';
+// Import necessary libraries and plugins
+import dayjs from 'dayjs'; // Utility for handling dates and times
+import utc from 'dayjs/plugin/utc.js'; // Plugin to manage UTC dates
+import timezone from 'dayjs/plugin/timezone.js'; // Plugin to manage timezones
 
-import { UrlModel } from './db.js';
-import { generateRandomString } from './randomstring.js';
-import { authenticateMiddleware } from './auth.js'; // Import middleware
+import { UrlModel } from './db.js'; // MongoDB model for URL storage
+import { generateRandomString } from './randomstring.js'; // Utility to generate random strings
+import { authenticateMiddleware } from './auth.js'; // Middleware for user authentication
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-
 // Helper function to generate the next customId
 const getNextCustomId = async () => {
+  // Fetch the last document in the collection, sorted by customId
   const lastUrl = await UrlModel.findOne({}, {}, { sort: { customId: -1 } }).exec();
-  return lastUrl ? lastUrl.customId + 1 : 1000; // Start from 1000 if none exists
+  // If no document exists, start from 1000
+  return lastUrl ? lastUrl.customId + 1 : 1000;
 };
 
+// Function to shorten a URL
 export const shortenUrl = [
-  authenticateMiddleware, // Middleware to enforce authentication
+  authenticateMiddleware, // Enforce authentication for this route
   async (req, res) => {
-    const { targetUrl, description, expiryDate } = req.body;
+    const { targetUrl, description, expiryDate } = req.body; // Extract inputs from request body
 
-    // Validate input
+    // Validate the inputs
     if (!targetUrl) {
       return res.status(400).json({ error: 'targetUrl is required' });
     }
@@ -31,42 +34,38 @@ export const shortenUrl = [
     }
 
     try {
-      // Get the current time in UTC
-      const createdTime = dayjs().utc().toDate(); // Get current UTC time
+      const createdTime = dayjs().utc().toDate(); // Get the current time in UTC
+      const nextId = await getNextCustomId(); // Generate the next customId
 
-      // Generate the next customId
-      const nextId = await getNextCustomId();
-
-      // Generate a unique shortened URL string
+      // Generate a unique short URL string
       let shortenedUrlString;
       do {
         shortenedUrlString = generateRandomString(6);
-      } while (await UrlModel.exists({ shortenedUrlString }));
+      } while (await UrlModel.exists({ shortenedUrlString })); // Ensure uniqueness
 
-      // Prepare the expiry date
+      // Convert expiryDate to UTC format if provided
       const expiryDateUTC = expiryDate ? dayjs(expiryDate).utc().toDate() : null;
 
-      // Create a new document in the MongoDB collection
+      // Create a new document in the database
       const urlDocument = new UrlModel({
         targetUrl,
         description,
-        expiryDate: expiryDateUTC, // Store expiry date as UTC
-        createdTime, // Current time in UTC
+        expiryDate: expiryDateUTC,
+        createdTime,
         shortenedUrlString,
         customId: nextId,
-        createdBy: req.user ? req.user.idir_username : 'unknown', // Ensure createdBy is assigned
-        versions: [], // Initialize an empty array for versioning
-        updatedAt: null, // Set updatedAt as null initially
-        editedBy: null, // Set editedBy as null initially
+        createdBy: req.user ? req.user.idir_username : 'unknown', // Record the creator
+        versions: [], // Initialize the version history
+        updatedAt: null,
+        editedBy: null,
       });
 
-      // Save the document to the database
-      await urlDocument.save();
+      await urlDocument.save(); // Save the document
 
-      // Construct the complete shortened URL
-      const shortenedUrl = `${process.env.CUSTOM_DOMAIN}/${shortenedUrlString}`;
+      // Construct the full shortened URL
+      const shortenedUrl = `${process.env.VANITY_URL}/${shortenedUrlString}`;
 
-      // Respond with the shortened URL and custom ID
+      // Respond with the shortened URL and customId
       res.json({ shortenedUrl, customId: nextId });
     } catch (error) {
       console.error('Error processing URL:', error.message);
@@ -75,50 +74,45 @@ export const shortenUrl = [
   },
 ];
 
-
-
+// Function to update an existing URL
 export const updateUrl = [
-  authenticateMiddleware, // Middleware to enforce authentication
+  authenticateMiddleware, // Enforce authentication for this route
   async (req, res) => {
-    const { customId } = req.params; // Extract customId from the request parameters
-    const { targetUrl, expiryDate, description } = req.body;
+    const { customId } = req.params; // Extract customId from route parameters
+    const { targetUrl, expiryDate, description } = req.body; // Extract inputs from request body
 
-    // Validate input
+    // Validate inputs
     if (expiryDate && isNaN(Date.parse(expiryDate))) {
       return res.status(400).json({ error: 'Invalid expiryDate format' });
     }
 
     try {
-      // Find the existing URL document using customId
+      // Find the existing document by customId
       const urlDocument = await UrlModel.findOne({ customId });
 
       if (!urlDocument) {
         return res.status(404).json({ error: 'URL not found' });
       }
 
-      // Log the user object to ensure it's populated correctly
-      console.log('Authenticated User:', req.user);
-
-      // Add the current values to the versions array before updating
+      // Add the current state to the version history before updating
       urlDocument.versions.push({
         targetUrl: urlDocument.targetUrl,
         expiryDate: urlDocument.expiryDate,
         description: urlDocument.description,
-        updatedAt: dayjs().utc().toDate(), // Current UTC timestamp for versioning
-        editedBy: req.user ? req.user.idir_username : 'unknown', // Track who edited
+        updatedAt: dayjs().utc().toDate(),
+        editedBy: req.user ? req.user.idir_username : 'unknown',
       });
 
       // Update the fields with new values
       if (targetUrl) urlDocument.targetUrl = targetUrl;
-      if (expiryDate) urlDocument.expiryDate = dayjs(expiryDate).utc().toDate(); // Convert expiry date to UTC
+      if (expiryDate) urlDocument.expiryDate = dayjs(expiryDate).utc().toDate();
       if (description) urlDocument.description = description;
 
-      // Update the main document with new `updatedAt` and `editedBy`
-      urlDocument.updatedAt = dayjs().utc().toDate(); // Set updated UTC timestamp
-      urlDocument.editedBy = req.user ? req.user.idir_username : 'unknown'; // Set who edited
+      // Update metadata for the document
+      urlDocument.updatedAt = dayjs().utc().toDate();
+      urlDocument.editedBy = req.user ? req.user.idir_username : 'unknown';
 
-      // Save the updated document
-      await urlDocument.save();
+      await urlDocument.save(); // Save the updated document
 
       res.json({ message: 'URL updated successfully', urlDocument });
     } catch (error) {
@@ -128,28 +122,25 @@ export const updateUrl = [
   },
 ];
 
-
-
+// Function to retrieve the version history of a URL
 export const getHistory = [
-  authenticateMiddleware, // Use middleware to enforce authentication
+  authenticateMiddleware,
   async (req, res) => {
-    const { customId } = req.params; // Extract customId from the request parameters
+    const { customId } = req.params;
 
     try {
-      // Find the URL document using customId
       const urlDocument = await UrlModel.findOne({ customId });
 
       if (!urlDocument) {
         return res.status(404).json({ error: 'URL not found' });
       }
 
-      // Convert dates in the versions array to UTC for consistency
-      const versions = urlDocument.versions.map(version => ({
+      // Convert timestamps in the version history to UTC
+      const versions = urlDocument.versions.map((version) => ({
         ...version,
         updatedAt: version.updatedAt ? dayjs(version.updatedAt).utc().toISOString() : null,
       }));
 
-      // Respond with the version history
       res.json({ versions });
     } catch (error) {
       console.error('Error fetching version history:', error.message);
@@ -157,4 +148,108 @@ export const getHistory = [
     }
   },
 ];
+
+export const handleRedirect = async (req, res) => {
+  const { shortUrl } = req.params;
+
+  try {
+    const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
+
+    if (!urlDocument) {
+      // Serve an HTML error page for a non-existent link
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Link Not Found</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .error { color: red; font-size: 24px; }
+          </style>
+        </head>
+        <body>
+          <h1 class="error">This link does not exist.</h1>
+          <p>Please check the URL or contact support for assistance.</p>
+        </body>
+        </html>
+      `);
+    }
+
+    const currentDate = dayjs().utc();
+    const expiryDate = urlDocument.expiryDate ? dayjs(urlDocument.expiryDate).utc() : null;
+
+    if (expiryDate && currentDate.isAfter(expiryDate)) {
+      // Serve an HTML error page for an expired link
+      return res.status(410).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Link Expired</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .error { color: orange; font-size: 24px; }
+          </style>
+        </head>
+        <body>
+          <h1 class="error">This link has expired.</h1>
+          <p>The link you are trying to access is no longer valid.</p>
+        </body>
+        </html>
+      `);
+    }
+
+    // Redirect valid links
+    return res.redirect(urlDocument.targetUrl);
+  } catch (error) {
+    console.error('Error handling redirect:', error.message);
+    return res.status(500).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Server Error</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          .error { color: red; font-size: 24px; }
+        </style>
+      </head>
+      <body>
+        <h1 class="error">An unexpected error occurred.</h1>
+        <p>Please try again later or contact support.</p>
+      </body>
+      </html>
+    `);
+  }
+};
+
+
+// Function to validate a short URL without redirection
+export const validateShortUrl = async (req, res) => {
+  const { shortUrl } = req.params;
+
+  try {
+    const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
+
+    if (!urlDocument) {
+      return res.status(404).json({ error: 'Link not found' });
+    }
+
+    const currentDate = dayjs().utc();
+    const expiryDate = urlDocument.expiryDate ? dayjs(urlDocument.expiryDate).utc() : null;
+
+    if (expiryDate && currentDate.isAfter(expiryDate)) {
+      return res.status(410).json({ error: 'Link expired' });
+    }
+
+    res.status(200).json({ message: 'Link is valid' });
+  } catch (error) {
+    console.error('Error validating short URL:', error.message);
+    res.status(500).json({ error: 'Unable to process your request. Please try again later.' });
+  }
+};
 
