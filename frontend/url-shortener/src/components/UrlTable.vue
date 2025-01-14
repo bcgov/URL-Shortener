@@ -37,7 +37,7 @@
             Created By {{ getSortIcon('createdBy') }}
           </th>
           <th @click="sort('createdTime')" :class="{ 'sortable': true, 'asc': sortField === 'createdTime' }">
-            Created On {{ getSortIcon('createdTime') }}
+            Created Date {{ getSortIcon('createdTime') }}
           </th>
           <!--<th>Tags</th>-->
           <th>Notes</th>

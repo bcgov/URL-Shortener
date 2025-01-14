@@ -5,7 +5,7 @@
       {{ editButtonText }}
     </button>
     
-      <h2><strong>Short URL:</strong>
+      <h2><strong>Short URL: </strong>
         <a :href="shortenedUrl || '#'" target="_blank">{{ shortenedUrl || 'N/A' }}</a>
         <button class="copy-btn" @click="copyToClipboard(shortenedUrl || '')">
           <img src="../assets/copy.svg" alt="Copy icon" />
@@ -26,6 +26,7 @@
           <img src="../assets/copy.svg" alt="Copy icon" />
         </button>
       </p>
+      <p><span style="font-weight: bold;">Expiry Date:</span> {{ formatExpiryDate(expiryDate) || 'No expiry date' }}</p>
       <p v-if="customId">
         <span style="font-weight: bold;">Internal Link: </span>
         <a :href="`${frontendURL}/url-summary/${customId}`" target="_blank">{{ `${frontendURL}/url-summary/${customId}` || 'N/A' }}</a>
@@ -33,32 +34,24 @@
           <img src="../assets/copy.svg" alt="Copy icon" />
         </button>
       </p>
-      <p><span style="font-weight: bold;">Expiry Date:</span> {{ formatExpiryDate(expiryDate) || 'No expiry date' }}</p>
-      <p><span style="font-weight: bold;">Created By:</span> {{ createdBy || 'Unknown' }}</p>
-      <p><span style="font-weight: bold;">Created Date/Time:</span> {{ createdTime || 'N/A' }}</p>
-      <p><span style="font-weight: bold;">Edited By:</span> {{ editedBy || 'No edits' }}</p>
-      <p><span style="font-weight: bold;">Edited Date/Time:</span> {{ updatedAt || 'No edits' }}</p>
-    </div>
-
-
-    <br />
-
-    <!-- Notes Section -->
-    <div class="notes">
-      <h2><strong>Notes</strong></h2>
       
-      <p>{{ description || 'No description provided' }}</p>
+      <p><span style="font-weight: bold;">Created By:</span> {{ createdBy || 'Unknown' }}</p>
+      <p><span style="font-weight: bold;">Created Date:</span> {{ createdTime || 'N/A' }}</p>
+      <p><span style="font-weight: bold;">Edited By:</span> {{ editedBy || 'No edits' }}</p>
+      <p><span style="font-weight: bold;">Edited Date:</span> {{ updatedAt || 'No edits' }}</p>
+      <p><span style="font-weight: bold;">Notes:</span> {{ description || 'No description provided' }}</p>
     </div>
 
-    <br />
+
+
+
 
     <!-- Feedback Message -->
     <p v-if="copiedMessage" style="color: green;">{{ copiedMessage }}</p>
 
     <!-- Edit Form -->
     <div v-if="isEditing" class="edit-form">
-      <h3 style="font-weight: bold;">Edit</h3>
-      <br />
+      <h2><strong>Edit Form</strong></h2>
       <div class="edit-form-container">
         <form @submit.prevent="submitEdit">
           <label for="targetUrl">Target URL:</label>
@@ -80,7 +73,7 @@
           />
         
           <label for="description">Notes (Optional):</label>
-          {{ editedDescription.length }} / 500 max characters limit
+          <p style="font-style: italic;" >{{editedDescription.length }} / 500 max characters limit</p>
           <textarea
             id="description"
             v-model="editedDescription"
@@ -99,6 +92,7 @@
         </form>
       </div>
     </div>
+    <br />
 
 
 
@@ -113,7 +107,7 @@
             <th>Old Value</th>
             <th>New Value</th>
             <th>Edited By</th>
-            <th>Timestamp</th>
+            <th>Edited Date</th>
           </tr>
         </thead>
         <tbody>
