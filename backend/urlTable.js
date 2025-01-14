@@ -7,7 +7,7 @@ export const getUrlTable = async (req, res, next) => {
     
     // Update shortenedUrlString with the short URL domain from environment variable
     urlTable = urlTable.map((url) => {
-      url.shortenedUrlString = `https://${process.env.CUSTOM_DOMAIN}/${url.shortenedUrlString}`;
+      url.shortenedUrlString = `${process.env.VANITY_URL}/${url.shortenedUrlString}`;
       return url;
     });
 

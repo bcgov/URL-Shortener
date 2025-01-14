@@ -53,7 +53,7 @@
           </td>
           <td class="shorturl-cell">
               <a :href="url.shortenedUrlString" target="_blank">
-                {{ url.shortenedUrlString.replace(/^https?:\/\//, '') }}
+                {{ url.shortenedUrlString }}
               </a>
               <button class="copy-btn" @click="copyToClipboard(url.shortenedUrlString)">
                 <img src="../assets/copy.svg" alt="Copy icon">
