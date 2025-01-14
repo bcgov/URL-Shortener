@@ -14,6 +14,6 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0', // Required for OpenShift to make the container accessible
+    host: 'app.localhost', 
   },
 });
