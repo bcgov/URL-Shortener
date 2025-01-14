@@ -47,7 +47,7 @@
           <!-- Submit Button -->
           <button type="submit" :disabled="isSubmitting || formSubmitted">
             <!-- Button text changes based on form state -->
-            {{ isSubmitting || formSubmitted ? 'Processing...' : 'Shorten URL' }}
+            {{ isSubmitting || formSubmitted ? 'Processing...' : 'Create Short URL' }}
           </button>
         </div>
       </form>

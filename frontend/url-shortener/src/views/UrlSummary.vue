@@ -10,7 +10,6 @@
         <button class="copy-btn" @click="copyToClipboard(shortenedUrl || '')">
           <img src="../assets/copy.svg" alt="Copy icon" />
         </button>
-
       </h2>
       
 
@@ -79,20 +78,23 @@
             :disabled="fieldsDisabled"
             :min="getTodayDate()"
           />
+        
           <label for="description">Notes (Optional):</label>
+          {{ editedDescription.length }} / 500 max characters limit
           <textarea
             id="description"
             v-model="editedDescription"
             :disabled="fieldsDisabled"
             rows="3"
             placeholder="Enter description (optional)"
+            maxlength="500"
           ></textarea>
           <button
             type="submit"
             class="bcgov-submit-button"
             :disabled="isSubmitting"
           >
-            {{ isSubmitting ? "Changes saved successfully!" : "Submit" }}
+            {{ isSubmitting ? "Changes saved successfully!" : "Save Edits" }}
           </button>
         </form>
       </div>
