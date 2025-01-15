@@ -18,6 +18,21 @@
     <div class="url-details">
       <h2><strong>URL Details</strong></h2>
       
+        <p>
+          <span style="font-weight: bold;">Full Short URL: </span>
+          <a 
+            :href="shortenedUrl ? `https://${shortenedUrl.replace(/^https?:\/\//, '')}` : '#'" 
+            target="_blank"
+          >
+            {{ shortenedUrl ? `https://${shortenedUrl.replace(/^https?:\/\//, '')}` : 'N/A' }}
+          </a>
+          <button 
+            class="copy-btn" 
+            @click="copyToClipboard(shortenedUrl ? `https://${shortenedUrl.replace(/^https?:\/\//, '')}` : '')"
+          >
+            <img src="../assets/copy.svg" alt="Copy icon" />
+          </button>
+        </p>
 
       <p v-if="targetUrl">
         <span style="font-weight: bold;">Target URL: </span>
@@ -41,10 +56,6 @@
       <p><span style="font-weight: bold;">Edited Date:</span> {{ updatedAt || 'No edits' }}</p>
       <p><span style="font-weight: bold;">Notes:</span> {{ description || 'No description provided' }}</p>
     </div>
-
-
-
-
 
     <!-- Feedback Message -->
     <p v-if="copiedMessage" style="color: green;">{{ copiedMessage }}</p>
@@ -73,7 +84,7 @@
           />
         
           <label for="description">Notes (Optional):</label>
-          <p style="font-style: italic;" >{{editedDescription.length }} / 500 max characters limit</p>
+          <p style="font-style: italic;" >{{editedDescription.length }} / 500 max character limit</p>
           <textarea
             id="description"
             v-model="editedDescription"
