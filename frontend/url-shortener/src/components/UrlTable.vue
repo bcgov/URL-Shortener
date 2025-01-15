@@ -37,7 +37,7 @@
             Created By {{ getSortIcon('createdBy') }}
           </th>
           <th @click="sort('createdTime')" :class="{ 'sortable': true, 'asc': sortField === 'createdTime' }">
-            Created On {{ getSortIcon('createdTime') }}
+            Created Date {{ getSortIcon('createdTime') }}
           </th>
           <!--<th>Tags</th>-->
           <th>Notes</th>
@@ -53,7 +53,7 @@
           </td>
           <td class="shorturl-cell">
               <a :href="url.shortenedUrlString" target="_blank">
-                {{ url.shortenedUrlString.replace(/^https?:\/\//, '') }}
+                {{ url.shortenedUrlString }}
               </a>
               <button class="copy-btn" @click="copyToClipboard(url.shortenedUrlString)">
                 <img src="../assets/copy.svg" alt="Copy icon">
