@@ -225,8 +225,10 @@ export const handleRedirect = async (req, res) => {
       `);
     }
 
+
     // Redirect valid links with 307 Temporary Redirect
-    return res.status(307).redirect(urlDocument.targetUrl);
+    return res.status(307).location(urlDocument.targetUrl).end();
+
 
   } catch (error) {
     console.error('Error handling redirect:', error.message);
@@ -248,32 +250,6 @@ export const handleRedirect = async (req, res) => {
       </body>
       </html>
     `);
-  }
-};
-
-
-// Function to validate a short URL without redirection
-export const validateShortUrl = async (req, res) => {
-  const { shortUrl } = req.params;
-
-  try {
-    const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
-
-    if (!urlDocument) {
-      return res.status(404).json({ error: 'Link not found' });
-    }
-
-    const currentDate = dayjs().utc();
-    const expiryDate = urlDocument.expiryDate ? dayjs(urlDocument.expiryDate).utc() : null;
-
-    if (expiryDate && currentDate.isAfter(expiryDate)) {
-      return res.status(410).json({ error: 'Link expired' });
-    }
-
-    res.status(200).json({ message: 'Link is valid' });
-  } catch (error) {
-    console.error('Error validating short URL:', error.message);
-    res.status(500).json({ error: 'Unable to process your request. Please try again later.' });
   }
 };
 

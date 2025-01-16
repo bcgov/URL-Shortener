@@ -72,9 +72,7 @@ router.use(limiter);
 router.use((req, res, next) => {
   // Allow unauthenticated access for:
   // - Short URLs (e.g., /552435)
-  // - Validation routes (e.g., /validate/:shortUrl)
-  if (/^\/[a-zA-Z0-9]{6}$/.test(req.path) || req.path.startsWith('/validate/')) {
-    console.log(`Unauthenticated route accessed: ${req.path}`);
+  if (/^\/[a-zA-Z0-9]{6}$/.test(req.path)) {
     return next();
   }
   // Apply authentication for all other routes
