@@ -152,11 +152,34 @@ export const getHistory = [
 export const handleRedirect = async (req, res) => {
   const { shortUrl } = req.params;
 
+  // Validate that shortUrl is exactly 6 digits
+  const shortUrlPattern = /^\d{6}$/;
+  if (!shortUrl || !shortUrlPattern.test(shortUrl)) {
+    return res.status(404).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Invalid URL</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          .error { color: red; font-size: 24px; }
+        </style>
+      </head>
+      <body>
+        <h1 class="error">Invalid or Missing URL</h1>
+        <p>The URL you requested is not valid. Please check the format or contact support.</p>
+      </body>
+      </html>
+    `);
+  }
+
   try {
     const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
 
+    // Check if the URL exists in the database
     if (!urlDocument) {
-      // Serve an HTML error page for a non-existent link
       return res.status(404).send(`
         <!DOCTYPE html>
         <html lang="en">
@@ -180,9 +203,9 @@ export const handleRedirect = async (req, res) => {
     const currentDate = dayjs().utc();
     const expiryDate = urlDocument.expiryDate ? dayjs(urlDocument.expiryDate).utc() : null;
 
+    // Check if the URL is expired
     if (expiryDate && currentDate.isAfter(expiryDate)) {
-      // Serve an HTML error page for an expired link
-      return res.status(410).send(`
+      return res.status(404).send(`
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -202,8 +225,11 @@ export const handleRedirect = async (req, res) => {
       `);
     }
 
-    // Redirect valid links
-    return res.redirect(urlDocument.targetUrl);
+
+    // Redirect valid links with 307 Temporary Redirect
+    return res.status(307).location(urlDocument.targetUrl).end();
+
+
   } catch (error) {
     console.error('Error handling redirect:', error.message);
     return res.status(500).send(`
@@ -224,32 +250,6 @@ export const handleRedirect = async (req, res) => {
       </body>
       </html>
     `);
-  }
-};
-
-
-// Function to validate a short URL without redirection
-export const validateShortUrl = async (req, res) => {
-  const { shortUrl } = req.params;
-
-  try {
-    const urlDocument = await UrlModel.findOne({ shortenedUrlString: shortUrl });
-
-    if (!urlDocument) {
-      return res.status(404).json({ error: 'Link not found' });
-    }
-
-    const currentDate = dayjs().utc();
-    const expiryDate = urlDocument.expiryDate ? dayjs(urlDocument.expiryDate).utc() : null;
-
-    if (expiryDate && currentDate.isAfter(expiryDate)) {
-      return res.status(410).json({ error: 'Link expired' });
-    }
-
-    res.status(200).json({ message: 'Link is valid' });
-  } catch (error) {
-    console.error('Error validating short URL:', error.message);
-    res.status(500).json({ error: 'Unable to process your request. Please try again later.' });
   }
 };
 

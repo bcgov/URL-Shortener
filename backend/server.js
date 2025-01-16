@@ -19,6 +19,16 @@ if (!BACKEND_URL || !FRONTEND_URL || !VANITY_URL) {
 // Initialize an Express application
 const app = express();
 
+// Trust proxy to properly interpret X-Forwarded-For headers
+
+if (process.env.NODE_ENV === 'local') {
+  // Running locally with Nginx
+  app.set('trust proxy', 1); // Trust the first proxy
+} else {
+  // Running in OpenShift (no reverse proxy)
+  app.set('trust proxy', false); // Do not trust any proxies
+}
+
 // Set up rate limiter: maximum of 100 requests per 15 minutes
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -43,7 +53,6 @@ app.use(
     credentials: true, // Include credentials if needed
   })
 );
-
 
 // Ensure preflight requests are handled properly
 app.options('*', cors());
@@ -72,9 +81,7 @@ router.use(limiter);
 router.use((req, res, next) => {
   // Allow unauthenticated access for:
   // - Short URLs (e.g., /552435)
-  // - Validation routes (e.g., /validate/:shortUrl)
-  if (/^\/[a-zA-Z0-9]{6}$/.test(req.path) || req.path.startsWith('/validate/')) {
-    console.log(`Unauthenticated route accessed: ${req.path}`);
+  if (/^\/[a-zA-Z0-9]{6}$/.test(req.path)) {
     return next();
   }
   // Apply authentication for all other routes
