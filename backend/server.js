@@ -19,9 +19,7 @@ if (!BACKEND_URL || !FRONTEND_URL || !VANITY_URL) {
 // Initialize an Express application
 const app = express();
 
-
 app.set('trust proxy', 1); // Trust the first proxy
-
 
 // Set up rate limiter: maximum of 100 requests per 15 minutes
 const limiter = rateLimit({
@@ -71,15 +69,21 @@ const router = express.Router();
 // Apply the rate limiter to all routes in the router
 router.use(limiter);
 
-// Apply authentication middleware selectively
+// Apply authentication middleware only to specified routes
+const authenticatedRoutes = [
+  '/create',
+  '/url-summary/:customId',
+  '/urls',
+  '/update-url/:customId',
+  '/url-history/:customId',
+];
+
+// Middleware to check authentication for specific routes
 router.use((req, res, next) => {
-  // Allow unauthenticated access for:
-  // - Short URLs (e.g., /552435)
-  if (/^\/[a-zA-Z0-9]{6}$/.test(req.path)) {
-    return next();
+  if (authenticatedRoutes.some((route) => req.path.startsWith(route))) {
+    return authenticateMiddleware(req, res, next); // Apply authentication
   }
-  // Apply authentication for all other routes
-  authenticateMiddleware(req, res, next);
+  next(); // Skip authentication for other routes
 });
 
 // Set up your application routes
