@@ -27,7 +27,7 @@ if (isLocal) {
   if (process.env.MONGODB_USER && process.env.MONGODB_PASSWORD) {
     const mongodbUser = process.env.MONGODB_USER;
     const mongodbPassword = process.env.MONGODB_PASSWORD;
-    mongoURL = `mongodb://${mongodbUser}:${mongodbPassword}@${mongodbHost}:${mongodbPort}/${mongodbDatabase}`;
+    mongoURL = `mongodb://${mongodbUser}:${mongodbPassword}@${mongodbHost}:${mongodbPort}/${mongodbDatabase}?directConnection=true`;
   }
 }
 
