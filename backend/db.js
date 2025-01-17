@@ -28,7 +28,7 @@ if (isLocal) {
     const mongodbUser = process.env.MONGODB_USER;
     const mongodbPassword = process.env.MONGODB_PASSWORD;
     console.log(`MongoDB User: ${mongodbUser}`);
-    mongoURL = `mongodb://${mongodbUser}:${mongodbPassword}@${mongodbHost}:${mongodbPort}/${mongodbDatabase}?directConnection=true`;
+    mongoURL = `mongodb://${mongodbUser}:${mongodbPassword}@${mongodbHost}:${mongodbPort}/${mongodbDatabase}?authSource=admin`;
     console.log(`Non-local MongoDB URL: ${mongoURL}`);
   } else {
     console.error("MongoDB credentials are missing in the environment variables.");
